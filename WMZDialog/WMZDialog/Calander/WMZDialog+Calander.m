@@ -4,7 +4,7 @@
 //
 //  Created by wmz on 2019/11/7.
 //  Copyright © 2019 wmz. All rights reserved.
-//
+//  // ----reset重写
 
 #import "WMZDialog+Calander.h"
 #define NumberMounthes 4
@@ -62,7 +62,6 @@ static  const void *todayKey = @"todayKey";
         self.wDateShowCircle = [NSArray arrayWithArray:arr];
     }
     
-
     self.diaLogHeadView = [self addTopView];
     [self.OKBtn addTarget:self action:@selector(calanderOKAction) forControlEvents:UIControlEventTouchUpInside];
 
@@ -73,6 +72,7 @@ static  const void *todayKey = @"todayKey";
     self.textLabel.frame = CGRectMake((self.wWidth-100)/2 , 0, 100, 30);
     self.textLabel.textAlignment = NSTextAlignmentCenter;
     titleView.frame = CGRectMake(0, 0, self.wWidth, self.wMessage.length?self.textLabel.frame.size.height:40);
+
     
     NSString *left = [self.dialogBundle pathForResource:@"dia_right" ofType:@"png"];
     NSString *right = [self.dialogBundle pathForResource:@"dia_left" ofType:@"png"];
@@ -106,18 +106,18 @@ static  const void *todayKey = @"todayKey";
         if (i == 0 || i == 6) {
             weekTitleLable.textColor = self.wOKColor;
         }else{
-            weekTitleLable.textColor = DialogColor(0x333333);
+            weekTitleLable.textColor = DialogColor(0x444444);
         }
-        weekTitleLable.font = [UIFont fontWithName:@"Helvetica-Bold" size:15.0];
+        weekTitleLable.font = [UIFont systemFontOfSize:15 weight:UIFontWeightMedium];
         weekTitleLable.text = [weekTitleArray objectAtIndex:i];
         weekTitleLable.textAlignment = NSTextAlignmentCenter;
         [headView addSubview:weekTitleLable];
     }
-    headView.frame = CGRectMake(0, self.diaLogHeadView?CGRectGetMaxY(self.diaLogHeadView.frame):0, self.wWidth, 40+titleView.frame.size.height);
+    headView.frame = CGRectMake(0, CGRectGetMaxY(self.diaLogHeadView.frame), self.wWidth, 40+titleView.frame.size.height);
     [self.mainView addSubview:headView];
     
     if (CGSizeEqualToSize(self.wCalanderCellSize, CGSizeZero)){
-        self.wCalanderCellSize = CGSizeMake(self.wWidth/(weekTitleArray.count*1.0), self.wWidth/(1.0*weekTitleArray.count));
+        self.wCalanderCellSize = CGSizeMake((self.wWidth - 10)/(weekTitleArray.count*1.0), (self.wWidth - 10)/(1.0*weekTitleArray.count));
     }
     self.layout = [[UICollectionViewFlowLayout alloc]init];
     self.layout.minimumLineSpacing = 0;
@@ -126,7 +126,7 @@ static  const void *todayKey = @"todayKey";
     self.layout.itemSize = self.wCalanderCellSize;
     CGFloat height = self.layout.itemSize.height*6;
     
-    self.collectionView = [[UICollectionView alloc]initWithFrame:CGRectMake(0,CGRectGetMaxY(headView.frame)+self.wMainOffsetY, self.wWidth, height) collectionViewLayout:self.layout];
+    self.collectionView = [[UICollectionView alloc]initWithFrame:CGRectMake(5,CGRectGetMaxY(headView.frame)+self.wMainOffsetY, self.wWidth - 10, height) collectionViewLayout:self.layout];
     self.collectionView.backgroundColor = [UIColor whiteColor];
     [self.collectionView registerClass:[WMZDialogCollectionCell class] forCellWithReuseIdentifier:@"WMZDialogCollectionCell"];
     [self.collectionView registerClass:[WMZDialogCalanderCell class] forCellWithReuseIdentifier:@"WMZDialogCalanderCell"];
@@ -196,6 +196,8 @@ static  const void *todayKey = @"todayKey";
         cell.dateLable.textColor = DialogColor(0xD9D9D9);
         cell.chineseLable.textColor = model.wHadHolday?DialogColor(0xFFCCCC):DialogColor(0xD3D3D3);
     }else{
+        cell.self.contentView.alpha = 1;
+        
         if (model.wShowCircle) {
             cell.circleLabel.text = @"●";
         }else{
@@ -203,7 +205,7 @@ static  const void *todayKey = @"todayKey";
         }
         cell.circleLabel.textColor = model.wCircleColor?:[UIColor orangeColor];
         //被选中
-        if (model.wSelected) {
+        if (model.wSelected && (![[NSString stringWithFormat:@"%ld-%ld-%ld",model.wYear,model.wMonth,model.wDay] isEqualToString:self.today] || self.wMultipleSelection)) {   // ----reset重写
             cell.dateLable.textColor = DialogColor(0xFFFFFF);
             cell.chineseLable.textColor = DialogColor(0xFFFFFF);
             color = self.wOKColor;
@@ -217,13 +219,21 @@ static  const void *todayKey = @"todayKey";
                 radio = CGSizeMake(self.wCalanderCellSize.height * 0.5, self.wCalanderCellSize.height * 0.5);
                 corner = UIRectCornerAllCorners;
             }
+            cell.self.contentView.alpha = 0.85f;
         }else{
-            if ([[NSString stringWithFormat:@"%ld-%ld-%ld",model.wYear,model.wMonth,model.wDay] isEqualToString:self.today]) {
-                cell.dateLable.textColor = self.wOKColor;
-                cell.chineseLable.textColor = self.wOKColor;
+            // 单选的时候固定显示默认日期 多选处理
+            if ([[NSString stringWithFormat:@"%ld-%ld-%ld",model.wYear,model.wMonth,model.wDay] isEqualToString:self.today] && !self.wMultipleSelection) {
+//                cell.dateLable.textColor = self.wOKColor;      // ----reset重写
+//                cell.chineseLable.textColor = self.wOKColor;   // ----reset重写
+                cell.dateLable.textColor = DialogColor(0xFFFFFF);
+                cell.chineseLable.textColor = DialogColor(0xFFFFFF);
+                radio = CGSizeMake(self.wCalanderCellSize.height * 0.5, self.wCalanderCellSize.height * 0.5);
+                corner = UIRectCornerAllCorners;
+                cell.self.contentView.alpha = 1;
+                color = self.wOKColor;
             }else{
                 //正常
-                cell.dateLable.textColor = DialogColor(0x333333);
+                cell.dateLable.textColor = DialogColor(0x444444);
                 cell.chineseLable.textColor = model.wHadHolday?[UIColor redColor]:DialogColor(0x666666);
             }
         }
@@ -236,7 +246,13 @@ static  const void *todayKey = @"todayKey";
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath{
     CalanderModel *model = self.dataArr[indexPath.section][indexPath.row];
     if (![self checkModel:model]) return;
+    if (self.wCalanderCellClick) {
+        self.wCalanderCellClick(indexPath,collectionView,model);
+    }
     if (model.wLastMonth||model.wNextMonth) return;
+    // 单选不允许反选  // ----reset重写
+    if (self.selecctCalanderModel == model && !self.wMultipleSelection) return;
+    
     if (!self.wMultipleSelection) {
         if (self.selecctCalanderModel!=model) {
             self.selecctCalanderModel.wSelected = NO;
@@ -259,15 +275,10 @@ static  const void *todayKey = @"todayKey";
         [self changeSelect:model];
         
     }
-    if (self.wCalanderCellClick) {
-        self.wCalanderCellClick(indexPath,collectionView,model);
-    }
     self.selecctCalanderModel = model;
     [UIView performWithoutAnimation:^{
        [self.collectionView reloadData];
     }];
-    
-    
 }
 
 - (void)changeSelect:(CalanderModel*)model{
@@ -631,18 +642,10 @@ static  const void *todayKey = @"todayKey";
                 [self.wListDefaultValue enumerateObjectsUsingBlock:^(id  _Nonnull obj, NSUInteger idx, BOOL * _Nonnull stop) {
                         if ([obj isKindOfClass:[NSNumber class]]) {
                             if ([obj doubleValue] == model.dateTime) {
-                                if (self.wMultipleSelection) {
-                                    model.wSelectedSet(YES);
-                                    if ([self.selectArr indexOfObject:model] == NSNotFound) {
-                                        [self.selectArr addObject:model];
-                                        count += 1;
-                                    }
-                                }else{
-                                    if (self.selecctCalanderModel) {
-                                        self.selecctCalanderModel.wSelectedSet(NO);
-                                    }
-                                    model.wSelectedSet(YES);
-                                    self.selecctCalanderModel = model;
+                                model.wSelectedSet(YES);
+                                if ([self.selectArr indexOfObject:model] == NSNotFound) {
+                                    [self.selectArr addObject:model];
+                                    count += 1;
                                 }
                             }
                         }else if ([obj isKindOfClass:[NSDate class]]) {
@@ -650,36 +653,20 @@ static  const void *todayKey = @"todayKey";
                             NSInteger month = [NSDate month:obj];
                             NSInteger day = [NSDate day:obj];
                              if ([[NSString stringWithFormat:@"%ld-%ld-%ld",model.wYear,model.wMonth,model.wDay] isEqualToString:[NSString stringWithFormat:@"%ld-%ld-%ld",year,month,day]]) {
-                                 if (self.wMultipleSelection) {
-                                     model.wSelectedSet(YES);
-                                     if ([self.selectArr indexOfObject:model] == NSNotFound) {
-                                          [self.selectArr addObject:model];
-                                         count += 1;
-                                     }
-                                 }else{
-                                     if (self.selecctCalanderModel) {
-                                         self.selecctCalanderModel.wSelectedSet(NO);
-                                     }
-                                     model.wSelectedSet(YES);
-                                     self.selecctCalanderModel = model;
-                                 }
+                                model.wSelectedSet(YES);
+                                if ([self.selectArr indexOfObject:model] == NSNotFound) {
+                                     [self.selectArr addObject:model];
+                                    count += 1;
+                                }
                             }
                         }else if ([obj isKindOfClass:[NSString class]]) {
                             if ([[NSString stringWithFormat:@"%ld-%ld-%ld",model.wYear,model.wMonth,model.wDay] isEqualToString:obj]) {
-                                if (self.wMultipleSelection) {
                                    model.wSelectedSet(YES);
-                                    if ([self.selectArr indexOfObject:model] == NSNotFound) {
-                                        [self.selectArr addObject:model];
-                                        count += 1;
-                                    }
-                                }else{
-                                    if (self.selecctCalanderModel) {
-                                        self.selecctCalanderModel.wSelectedSet(NO);
-                                    }
-                                    model.wSelectedSet(YES);
-                                    self.selecctCalanderModel = model;
-                                }
-                            }
+                                  if ([self.selectArr indexOfObject:model] == NSNotFound) {
+                                      [self.selectArr addObject:model];
+                                      count += 1;
+                                  }
+                              }
                            }
                        }];
                     if (count) {
@@ -788,8 +775,8 @@ static  const void *todayKey = @"todayKey";
     if (!_dateLable) {
         _dateLable = [UILabel new];
         [_dateLable setTextAlignment:NSTextAlignmentCenter];
-        [_dateLable setFont:[UIFont fontWithName:@"Helvetica-Bold" size:17.0]];
-        _dateLable.textColor = DialogColor(0x333333);
+        [_dateLable setFont:[UIFont systemFontOfSize:15 weight:UIFontWeightMedium]];
+        _dateLable.textColor = DialogColor(0x444444);
     }
     return _dateLable;
 }
